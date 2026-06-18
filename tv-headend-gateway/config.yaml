@@ -1,5 +1,5 @@
 name: TV-Headend Gateway
-version: "0.1.1"
+version: "0.1.2"
 slug: tv_headend_gateway
 description: Konfiguration, Diagnose und Steuerung fuer das externe TV-Headend Gateway
 url: https://github.com/PU-Brandt/TVheadend-Gateway
