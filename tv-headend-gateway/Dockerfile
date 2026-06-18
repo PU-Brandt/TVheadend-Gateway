@@ -1,5 +1,5 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+ARG BUILD_ARCH
+FROM ghcr.io/home-assistant/${BUILD_ARCH}-base:latest
 
 RUN apk add --no-cache python3
 
@@ -9,4 +9,3 @@ COPY addon_server.py /addon_server.py
 RUN chmod a+x /run.sh
 
 CMD ["/run.sh"]
-
