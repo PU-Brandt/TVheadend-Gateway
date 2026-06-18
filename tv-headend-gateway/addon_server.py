@@ -14,7 +14,7 @@ import urllib.request
 
 INGRESS_PORT = 8099
 OPTIONS_PATH = Path("/data/options.json")
-ADDON_VERSION = "0.1.3"
+ADDON_VERSION = "0.1.4"
 
 
 def load_options() -> dict[str, Any]:
@@ -22,7 +22,7 @@ def load_options() -> dict[str, Any]:
         return json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
     return {
         "external_host": "",
-        "external_port": 8088,
+        "external_port": 8089,
         "api_base_path": "/api/v1",
         "api_token": "",
         "request_timeout_seconds": 30,
@@ -31,7 +31,7 @@ def load_options() -> dict[str, Any]:
 
 def build_base_url(options: dict[str, Any]) -> str:
     host = str(options.get("external_host") or "").strip()
-    port = int(options.get("external_port") or 8088)
+    port = int(options.get("external_port") or 8089)
     base_path = str(options.get("api_base_path") or "/api/v1").strip()
     if not host:
         return ""
@@ -254,6 +254,8 @@ async function requestJson(url, options) {{
 
 let currentConfig = {{}};
 let advancedVisible = false;
+let connectedToolOk = false;
+const EXPECTED_TOOL_ID = 'tv-headend-gateway';
 
 function value(id) {{ return document.getElementById(id).value.trim(); }}
 function setValue(id, nextValue) {{ document.getElementById(id).value = nextValue ?? ''; }}
@@ -286,9 +288,26 @@ async function loadAll() {{
     requestJson('./api/health').catch(error => ({{status: 'error', message: String(error)}})),
     requestJson('./api/status').catch(error => ({{status: 'error', message: String(error)}})),
   ]);
+  connectedToolOk = manifest.tool_id === EXPECTED_TOOL_ID;
   document.getElementById('versionBadge').textContent = `Add-on {ADDON_VERSION} | Dienst ${{manifest.version || '-'}}`;
-  renderStatus(status, health);
+  if (!connectedToolOk) {{
+    renderWrongTool(manifest);
+  }} else {{
+    renderStatus(status, health);
+  }}
   document.getElementById('diagnostics').textContent = JSON.stringify({{manifest, health, status}}, null, 2);
+}}
+
+function renderWrongTool(manifest) {{
+  const banner = document.getElementById('statusBanner');
+  banner.className = 'banner error';
+  const found = manifest.name || manifest.tool_id || manifest.message || 'unbekannter Dienst';
+  banner.textContent = `Falscher Gateway-Dienst erreichbar: ${{found}}. Erwartet wird TV-Headend Gateway. Bitte in den Add-on-Optionen Host/Port des TV-Headend-Gateways eintragen.`;
+  document.getElementById('message').textContent = '';
+  document.getElementById('tileTvheadend').textContent = '-';
+  document.getElementById('tileChannels').textContent = '-';
+  document.getElementById('tileToken').textContent = '-';
+  document.getElementById('tileError').textContent = 'Falscher Dienst';
 }}
 
 function renderStatus(status, health) {{
@@ -303,6 +322,11 @@ function renderStatus(status, health) {{
 }}
 
 async function loadConfig() {{
+  await loadAll();
+  if (!connectedToolOk) {{
+    document.getElementById('message').textContent = 'Konfiguration nicht geladen: Das Add-on ist mit dem falschen Gateway-Dienst verbunden.';
+    return;
+  }}
   const data = await requestJson('./api/config');
   currentConfig = data.config || data;
   renderConfigForm();
@@ -311,6 +335,10 @@ async function loadConfig() {{
 async function saveConfig() {{
   const message = document.getElementById('message');
   try {{
+    await loadAll();
+    if (!connectedToolOk) {{
+      throw new Error('Speichern abgebrochen: Das Add-on ist mit dem falschen Gateway-Dienst verbunden.');
+    }}
     const config = advancedVisible
       ? JSON.parse(document.getElementById('configText').value || '{{}}')
       : collectTvheadendConfig();
@@ -381,6 +409,12 @@ function toggleAdvanced() {{
 async function runAction(action) {{
   const message = document.getElementById('message');
   try {{
+    if (action !== 'test_connection') {{
+      await loadAll();
+      if (!connectedToolOk) {{
+        throw new Error('Aktion abgebrochen: Das Add-on ist mit dem falschen Gateway-Dienst verbunden.');
+      }}
+    }}
     const data = await requestJson(`./api/actions/${{action}}`, {{method: 'POST'}});
     message.textContent = data.message || JSON.stringify(data);
     await loadAll();
@@ -390,12 +424,22 @@ async function runAction(action) {{
 }}
 
 async function testSpeak() {{
+  await loadAll();
+  if (!connectedToolOk) {{
+    document.getElementById('epgResult').textContent = 'Falscher Gateway-Dienst verbunden.';
+    return;
+  }}
   const channel = encodeURIComponent(value('testChannel') || 'Das Erste');
   const data = await fetch(`./proxy/speak/now?channel=${{channel}}`).then(response => response.json());
   document.getElementById('epgResult').textContent = JSON.stringify(data, null, 2);
 }}
 
 async function searchEpg() {{
+  await loadAll();
+  if (!connectedToolOk) {{
+    document.getElementById('epgResult').textContent = 'Falscher Gateway-Dienst verbunden.';
+    return;
+  }}
   const q = encodeURIComponent(value('searchQuery') || 'Tatort');
   const data = await fetch(`./proxy/epg/search?q=${{q}}&limit=5`).then(response => response.json());
   document.getElementById('epgResult').textContent = JSON.stringify(data, null, 2);

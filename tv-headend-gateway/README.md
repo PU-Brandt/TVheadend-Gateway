@@ -2,7 +2,7 @@
 
 Dieses Add-on stellt eine Home-Assistant-Oberflaeche fuer ein extern laufendes TV-Headend Gateway bereit.
 
-Aktuelle Add-on-Version: `0.1.3`
+Aktuelle Add-on-Version: `0.1.4`
 
 Das Gateway selbst muss separat laufen, zum Beispiel als Windows-Dienst per NSSM.
 
@@ -11,7 +11,7 @@ Das Gateway selbst muss separat laufen, zum Beispiel als Windows-Dienst per NSSM
 Pflicht:
 
 - `external_host`: IP oder Hostname des Rechners, auf dem das Gateway laeuft
-- `external_port`: Port des Gateways, Standard `8088`
+- `external_port`: Port des Gateways, Standard `8089`
 
 Optional:
 

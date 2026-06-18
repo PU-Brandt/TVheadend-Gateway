@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+- Add-on prueft jetzt hart, ob der verbundene Dienst wirklich `tv-headend-gateway` ist.
+- Bei falschem Dienst werden Status, Konfiguration und Aktionen blockiert, statt fremde Gateway-Daten anzuzeigen.
+- Speichern und erneutes Einlesen der TVHeadend-Konfiguration im externen Gateway korrigiert.
+- Standardport des TVHeadend-Gateways auf `8089` geaendert, um Konflikte mit anderen Gateway-Diensten auf `8088` zu vermeiden.
+
 ## 0.1.3
 
 - Konfigurationsseite auf TVHeadend-relevante Einstellungen reduziert.

@@ -7,7 +7,7 @@ Das externe TV-Headend Gateway muss erreichbar sein.
 Pruefung vom Home-Assistant-Netz aus:
 
 ```text
-http://GATEWAY-IP:8088/api/v1/health
+http://GATEWAY-IP:8089/api/v1/health
 ```
 
 Eine erfolgreiche Antwort sieht ungefaehr so aus:
@@ -24,7 +24,7 @@ Eine erfolgreiche Antwort sieht ungefaehr so aus:
 
 ```yaml
 external_host: "192.168.x.x"
-external_port: 8088
+external_port: 8089
 api_base_path: "/api/v1"
 api_token: ""
 request_timeout_seconds: 30
