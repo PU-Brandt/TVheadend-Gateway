@@ -14,7 +14,7 @@ import urllib.request
 
 INGRESS_PORT = 8099
 OPTIONS_PATH = Path("/data/options.json")
-ADDON_VERSION = "0.1.4"
+ADDON_VERSION = "0.1.5"
 
 
 def load_options() -> dict[str, Any]:
@@ -183,6 +183,8 @@ def render_page() -> bytes:
       <button class="secondary" onclick="runAction('test_connection')">Gateway testen</button>
       <button class="secondary" onclick="runAction('refresh_epg')">EPG neu abfragen</button>
       <button class="secondary" onclick="runAction('reload')">Gateway neu laden</button>
+      <button class="secondary" onclick="runAction('restart')">Gateway neu starten</button>
+      <button class="danger" onclick="runAction('shutdown')">Gateway beenden</button>
     </div>
     <p id="message"></p>
     <div id="statusBanner" class="banner">Status noch nicht geladen.</div>
@@ -409,6 +411,12 @@ function toggleAdvanced() {{
 async function runAction(action) {{
   const message = document.getElementById('message');
   try {{
+    if (action === 'restart' && !confirm('Gateway jetzt neu starten?')) {{
+      return;
+    }}
+    if (action === 'shutdown' && !confirm('Gateway jetzt beenden?')) {{
+      return;
+    }}
     if (action !== 'test_connection') {{
       await loadAll();
       if (!connectedToolOk) {{
@@ -417,6 +425,10 @@ async function runAction(action) {{
     }}
     const data = await requestJson(`./api/actions/${{action}}`, {{method: 'POST'}});
     message.textContent = data.message || JSON.stringify(data);
+    if (action === 'restart' || action === 'shutdown') {{
+      setTimeout(loadAll, 3000);
+      return;
+    }}
     await loadAll();
   }} catch (error) {{
     message.textContent = error.message;

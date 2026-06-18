@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Buttons zum Neustarten und Beenden des externen Gateways ergaenzt.
+- Gateway-Aktionen fuer Neustart und Beenden koennen ueber die Konfigurationsseite ausgeloest werden.
+
 ## 0.1.4
 
 - Add-on prueft jetzt hart, ob der verbundene Dienst wirklich `tv-headend-gateway` ist.
