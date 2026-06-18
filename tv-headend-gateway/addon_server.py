@@ -14,7 +14,7 @@ import urllib.request
 
 INGRESS_PORT = 8099
 OPTIONS_PATH = Path("/data/options.json")
-ADDON_VERSION = "0.1.2"
+ADDON_VERSION = "0.1.3"
 
 
 def load_options() -> dict[str, Any]:
@@ -49,7 +49,7 @@ def tool_request(method: str, path: str, payload: dict[str, Any] | None = None) 
     options = load_options()
     base_url = build_base_url(options)
     if not base_url:
-        return 400, {"status": "error", "message": "external_host ist nicht konfiguriert"}
+        return 400, {"status": "error", "message": "Die Gateway-Adresse ist in den Add-on-Optionen noch nicht gesetzt."}
 
     headers: dict[str, str] = {"Accept": "application/json"}
     token = str(options.get("api_token") or "").strip()
@@ -85,11 +85,28 @@ def tool_request(method: str, path: str, payload: dict[str, Any] | None = None) 
         return 502, {"status": "error", "message": str(exc), "base_url": base_url}
 
 
+def raw_gateway_request(path: str) -> tuple[int, dict[str, Any]]:
+    options = load_options()
+    base_url = build_base_url(options)
+    if not base_url:
+        return 400, {"status": "error", "message": "Die Gateway-Adresse ist in den Add-on-Optionen noch nicht gesetzt."}
+    root = base_url.removesuffix("/api/v1/")
+    url = urljoin(root.rstrip("/") + "/", path.lstrip("/"))
+    timeout = int(options.get("request_timeout_seconds") or 30)
+    request = urllib.request.Request(url, headers={"Accept": "application/json"}, method="GET")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            text = response.read().decode("utf-8")
+            return response.status, json.loads(text) if text else {}
+    except Exception as exc:
+        return 502, {"status": "error", "message": str(exc)}
+
+
 def normalize_response(body: Any) -> dict[str, Any]:
     if not isinstance(body, dict):
         return {"status": "ok", "value": body}
+    body = dict(body)
     if "status" not in body:
-        body = dict(body)
         body["status"] = "ok" if body.get("ok", True) else "error"
     if "message" not in body and "detail" in body:
         body["message"] = str(body["detail"])
@@ -98,7 +115,7 @@ def normalize_response(body: Any) -> dict[str, Any]:
 
 def render_page() -> bytes:
     options = load_options()
-    base_url = build_base_url(options) or "nicht konfiguriert"
+    gateway_url = build_base_url(options) or "nicht konfiguriert"
     html = f"""<!doctype html>
 <html lang="de">
 <head>
@@ -120,9 +137,9 @@ def render_page() -> bytes:
     .banner {{ padding: 12px; border-radius: 6px; border: 1px solid #fed7aa; background: #fff7ed; margin: 12px 0; }}
     .banner.ok {{ border-color: #bbf7d0; background: #ecfdf5; }}
     .banner.error {{ border-color: #fecaca; background: #fef2f2; }}
-    textarea {{ width: 100%; min-height: 300px; box-sizing: border-box; border: 1px solid #b8c4d0; border-radius: 6px; padding: 10px; font: 13px Consolas, monospace; resize: vertical; }}
     label {{ display: block; font-size: 12px; color: #596673; margin-bottom: 5px; }}
-    input, select {{ width: 100%; box-sizing: border-box; border: 1px solid #b8c4d0; border-radius: 6px; padding: 8px 9px; font: inherit; background: #fff; color: #1f2933; }}
+    input, select, textarea {{ width: 100%; box-sizing: border-box; border: 1px solid #b8c4d0; border-radius: 6px; padding: 8px 9px; font: inherit; background: #fff; color: #1f2933; }}
+    textarea {{ min-height: 260px; font: 13px Consolas, monospace; resize: vertical; }}
     .form-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }}
     .field {{ min-width: 0; }}
     .subhead {{ font-size: 15px; font-weight: 700; margin: 18px 0 10px; }}
@@ -130,13 +147,14 @@ def render_page() -> bytes:
     button.secondary {{ background: #52606d; }}
     button.danger {{ background: #b42318; }}
     .actions {{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }}
+    .muted {{ color: #596673; font-size: 13px; }}
     pre {{ white-space: pre-wrap; word-break: break-word; background: #f8fafc; border: 1px solid #d8e0e8; border-radius: 6px; padding: 12px; max-height: 300px; overflow: auto; }}
     #message {{ min-height: 22px; }}
     @media (prefers-color-scheme: dark) {{
       body {{ background: #11161c; color: #e6edf3; }}
       section, textarea, input, select {{ background: #171d24; color: #e6edf3; border-color: #344250; }}
       .tile, pre {{ background: #111820; border-color: #344250; }}
-      .label, label {{ color: #aab6c2; }}
+      .label, label, .muted {{ color: #aab6c2; }}
       .badge {{ background: #273444; color: #d6e0ea; }}
       .banner {{ background: #332414; border-color: #7a4b18; }}
       .banner.ok {{ background: #133226; border-color: #246b4a; }}
@@ -147,40 +165,43 @@ def render_page() -> bytes:
 <body>
 <main>
   <h1>TV-Headend Gateway <span class="badge" id="versionBadge">Add-on {ADDON_VERSION}</span></h1>
+
   <section>
+    <h2>Gateway-Verbindung</h2>
+    <p class="muted">Diese Verbindung wird in den Add-on-Optionen gesetzt. Hier wird sie nur angezeigt und getestet.</p>
     <div class="grid">
-      <div class="tile"><div class="label">Externer Gateway-Dienst</div><div class="value">{base_url}</div></div>
-      <div class="tile"><div class="label">Add-on</div><div class="value">Ingress Control</div></div>
+      <div class="tile"><div class="label">Gateway-API</div><div class="value">{gateway_url}</div></div>
       <div class="tile"><div class="label">Timeout</div><div class="value">{options.get("request_timeout_seconds", 30)} Sekunden</div></div>
+      <div class="tile"><div class="label">API-Token</div><div class="value">{"gesetzt" if options.get("api_token") else "nicht gesetzt"}</div></div>
     </div>
   </section>
+
   <section>
     <div class="actions">
       <h2 style="margin-right:auto">Status</h2>
       <button onclick="loadAll()">Aktualisieren</button>
-      <button class="secondary" onclick="runAction('test_connection')">Verbindung testen</button>
+      <button class="secondary" onclick="runAction('test_connection')">Gateway testen</button>
       <button class="secondary" onclick="runAction('refresh_epg')">EPG neu abfragen</button>
-      <button class="secondary" onclick="runAction('reload')">Neu laden</button>
-      <button class="danger" onclick="runCritical('restart')">Neustart</button>
-      <button class="danger" onclick="runCritical('shutdown')">Beenden</button>
+      <button class="secondary" onclick="runAction('reload')">Gateway neu laden</button>
     </div>
     <p id="message"></p>
     <div id="statusBanner" class="banner">Status noch nicht geladen.</div>
     <div class="grid">
       <div class="tile"><div class="label">TVHeadend</div><div class="value" id="tileTvheadend">-</div></div>
       <div class="tile"><div class="label">Sender</div><div class="value" id="tileChannels">-</div></div>
-      <div class="tile"><div class="label">Schreibschutz</div><div class="value" id="tileToken">-</div></div>
+      <div class="tile"><div class="label">Gateway-Schreibschutz</div><div class="value" id="tileToken">-</div></div>
       <div class="tile"><div class="label">Letzter Fehler</div><div class="value" id="tileError">-</div></div>
     </div>
   </section>
+
   <section>
     <div class="actions">
-      <h2 style="margin-right:auto">Konfiguration</h2>
+      <h2 style="margin-right:auto">TVHeadend-Konfiguration</h2>
       <button class="secondary" onclick="loadConfig()">Einlesen</button>
       <button onclick="saveConfig()">Speichern</button>
       <button class="secondary" onclick="toggleAdvanced()">JSON anzeigen</button>
     </div>
-    <div class="subhead">TVHeadend</div>
+    <p class="muted">Diese Werte beschreiben ausschliesslich die Verbindung vom Gateway zum TVHeadend-Server.</p>
     <div class="form-grid">
       <div class="field"><label for="tvhScheme">Protokoll</label><select id="tvhScheme"><option>http</option><option>https</option></select></div>
       <div class="field"><label for="tvhHost">TVHeadend IP oder Host</label><input id="tvhHost" placeholder="192.168.200.105"></div>
@@ -188,16 +209,6 @@ def render_page() -> bytes:
       <div class="field"><label for="tvhUsername">Benutzername optional</label><input id="tvhUsername" autocomplete="username"></div>
       <div class="field"><label for="tvhPassword">Passwort optional</label><input id="tvhPassword" type="password" autocomplete="new-password" placeholder="leer lassen, wenn unveraendert"></div>
       <div class="field"><label for="cacheSeconds">Cache Sekunden</label><input id="cacheSeconds" type="number" min="0" max="3600"></div>
-    </div>
-
-    <div class="subhead">Gateway und Home Assistant</div>
-    <div class="form-grid">
-      <div class="field"><label for="gatewayHost">Gateway Host</label><input id="gatewayHost"></div>
-      <div class="field"><label for="gatewayPort">Gateway Port</label><input id="gatewayPort" type="number" min="1" max="65535"></div>
-      <div class="field"><label for="securityToken">Gateway API-Token optional</label><input id="securityToken" type="password" autocomplete="new-password"></div>
-      <div class="field"><label for="haUrl">Home-Assistant-URL optional</label><input id="haUrl"></div>
-      <div class="field"><label for="haTimezone">Zeitzone</label><input id="haTimezone" placeholder="Europe/Berlin"></div>
-      <div class="field"><label for="haLocation">Standortname optional</label><input id="haLocation"></div>
     </div>
 
     <div class="subhead">EPG-Test</div>
@@ -212,10 +223,11 @@ def render_page() -> bytes:
     <pre id="epgResult">Noch keine EPG-Abfrage.</pre>
 
     <div id="advancedConfig" style="display:none; margin-top:18px">
-      <div class="subhead">Erweiterte JSON-Konfiguration</div>
+      <div class="subhead">Gespeicherte Gateway-Konfiguration</div>
       <textarea id="configText" spellcheck="false"></textarea>
     </div>
   </section>
+
   <section>
     <div class="actions">
       <h2 style="margin-right:auto">Logs</h2>
@@ -224,6 +236,7 @@ def render_page() -> bytes:
     </div>
     <pre id="logs">Noch keine Logs.</pre>
   </section>
+
   <section>
     <h2>Diagnose</h2>
     <pre id="diagnostics">Noch keine Daten.</pre>
@@ -300,7 +313,7 @@ async function saveConfig() {{
   try {{
     const config = advancedVisible
       ? JSON.parse(document.getElementById('configText').value || '{{}}')
-      : collectConfigForm();
+      : collectTvheadendConfig();
     const data = await requestJson('./api/config', {{
       method: 'PUT',
       headers: {{'Content-Type': 'application/json'}},
@@ -317,44 +330,43 @@ async function saveConfig() {{
 
 function renderConfigForm() {{
   const cfg = currentConfig || {{}};
-  const server = cfg.server || {{}};
-  const security = cfg.security || {{}};
   const tvh = cfg.tvheadend || {{}};
-  const ha = cfg.home_assistant || {{}};
   const parsed = parseBaseUrl(tvh.base_url);
-
   setValue('tvhScheme', parsed.scheme);
   setValue('tvhHost', parsed.host);
   setValue('tvhPort', parsed.port || 9981);
   setValue('tvhUsername', tvh.username || '');
   setValue('tvhPassword', tvh.password === '********' ? '' : (tvh.password || ''));
   setValue('cacheSeconds', tvh.cache_seconds ?? 20);
-  setValue('gatewayHost', server.host || '0.0.0.0');
-  setValue('gatewayPort', server.port ?? 8088);
-  setValue('securityToken', security.token || '');
-  setValue('haUrl', ha.url || '');
-  setValue('haTimezone', ha.timezone || 'Europe/Berlin');
-  setValue('haLocation', ha.location_name || '');
-  document.getElementById('configText').value = JSON.stringify(cfg, null, 2);
+  document.getElementById('configText').value = JSON.stringify(stripToTvheadendConfig(cfg), null, 2);
 }}
 
-function collectConfigForm() {{
-  const cfg = structuredClone(currentConfig || {{}});
-  cfg.server = cfg.server || {{}};
-  cfg.security = cfg.security || {{}};
-  cfg.tvheadend = cfg.tvheadend || {{}};
-  cfg.home_assistant = cfg.home_assistant || {{}};
-  cfg.server.host = value('gatewayHost') || '0.0.0.0';
-  cfg.server.port = numberValue('gatewayPort', 8088);
-  cfg.security.token = value('securityToken');
-  cfg.tvheadend.base_url = buildBaseUrl();
-  cfg.tvheadend.username = value('tvhUsername');
-  cfg.tvheadend.password = value('tvhPassword') || (cfg.tvheadend.password === '********' ? '********' : '');
-  cfg.tvheadend.cache_seconds = numberValue('cacheSeconds', 20);
-  cfg.home_assistant.url = value('haUrl');
-  cfg.home_assistant.timezone = value('haTimezone') || 'Europe/Berlin';
-  cfg.home_assistant.location_name = value('haLocation');
-  return cfg;
+function collectTvheadendConfig() {{
+  const oldTvh = (currentConfig || {{}}).tvheadend || {{}};
+  return {{
+    tvheadend: {{
+      base_url: buildBaseUrl(),
+      username: value('tvhUsername'),
+      password: value('tvhPassword') || (oldTvh.password === '********' ? '********' : ''),
+      cache_seconds: numberValue('cacheSeconds', 20)
+    }},
+    home_assistant: {{
+      url: window.location.origin,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Berlin',
+      location_name: ''
+    }}
+  }};
+}}
+
+function stripToTvheadendConfig(cfg) {{
+  return {{
+    tvheadend: (cfg || {{}}).tvheadend || {{}},
+    home_assistant: (cfg || {{}}).home_assistant || {{
+      url: window.location.origin,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Berlin',
+      location_name: ''
+    }}
+  }};
 }}
 
 function toggleAdvanced() {{
@@ -362,7 +374,7 @@ function toggleAdvanced() {{
   const panel = document.getElementById('advancedConfig');
   panel.style.display = advancedVisible ? 'block' : 'none';
   if (advancedVisible) {{
-    document.getElementById('configText').value = JSON.stringify(collectConfigForm(), null, 2);
+    document.getElementById('configText').value = JSON.stringify(collectTvheadendConfig(), null, 2);
   }}
 }}
 
@@ -375,10 +387,6 @@ async function runAction(action) {{
   }} catch (error) {{
     message.textContent = error.message;
   }}
-}}
-
-function runCritical(action) {{
-  if (confirm(`Aktion wirklich ausfuehren: ${{action}}?`)) runAction(action);
 }}
 
 async function testSpeak() {{
@@ -424,7 +432,7 @@ class Handler(BaseHTTPRequestHandler):
             self.proxy_api("GET", self.path.removeprefix("/api/"))
             return
         if self.path.startswith("/proxy/"):
-            self.proxy_raw("GET", self.path.removeprefix("/proxy/"))
+            self.proxy_raw(self.path.removeprefix("/proxy/"))
             return
         self.write_json(404, {"status": "error", "message": "not found"})
 
@@ -448,15 +456,8 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(raw or "{}")
         self.write_json(*tool_request(method, path, payload))
 
-    def proxy_raw(self, method: str, path: str) -> None:
-        options = load_options()
-        base_url = build_base_url(options)
-        if not base_url:
-            self.write_json(400, {"status": "error", "message": "external_host ist nicht konfiguriert"})
-            return
-        root = base_url.removesuffix("/api/v1/")
-        status, payload = raw_request(method, urljoin(root.rstrip("/") + "/", path.lstrip("/")))
-        self.write_json(status, payload)
+    def proxy_raw(self, path: str) -> None:
+        self.write_json(*raw_gateway_request(path))
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -475,17 +476,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-
-
-def raw_request(method: str, url: str) -> tuple[int, dict[str, Any]]:
-    timeout = int(load_options().get("request_timeout_seconds") or 30)
-    request = urllib.request.Request(url, headers={"Accept": "application/json"}, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            text = response.read().decode("utf-8")
-            return response.status, json.loads(text) if text else {}
-    except Exception as exc:
-        return 502, {"status": "error", "message": str(exc)}
 
 
 def main() -> None:

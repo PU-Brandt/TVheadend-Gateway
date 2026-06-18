@@ -1,8 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+- Konfigurationsseite auf TVHeadend-relevante Einstellungen reduziert.
+- Gateway-Host und Gateway-Port aus der fachlichen Konfigurationsmaske entfernt und nur noch als Add-on-Verbindungsstatus angezeigt.
+- Nicht benoetigte Fremdstrukturen werden beim Speichern nicht mehr geschrieben.
+- Home-Assistant-URL und Zeitzone werden im Browser automatisch aus dem laufenden Home-Assistant-Kontext abgeleitet.
+
 ## 0.1.2
 
-- Ingress-Konfigurationsseite an Aufbau und Bedienlogik des LMS-Gateway-Add-ons angeglichen.
+- Ingress-Konfigurationsseite an den bestehenden Add-on-Aufbau angeglichen.
 - Formularfelder fuer TVHeadend-Adresse, Port, Benutzername, Passwort und Cache ergaenzt.
 - Status-Kacheln, EPG-Testaktionen, Log-Anzeige und JSON-Expertenmodus erweitert.
 

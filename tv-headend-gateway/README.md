@@ -2,7 +2,7 @@
 
 Dieses Add-on stellt eine Home-Assistant-Oberflaeche fuer ein extern laufendes TV-Headend Gateway bereit.
 
-Aktuelle Add-on-Version: `0.1.2`
+Aktuelle Add-on-Version: `0.1.3`
 
 Das Gateway selbst muss separat laufen, zum Beispiel als Windows-Dienst per NSSM.
 
@@ -29,3 +29,5 @@ Optional:
 - EPG-Vorlesetext und EPG-Suche testen
 - Gateway-Aktionen ausloesen
 - sichtbare Gateway-Logs anzeigen und loeschen
+
+Die Seitenleisten-Oberflaeche zeigt die Verbindung zum externen Gateway nur an. Bearbeitet wird dort ausschliesslich die Verbindung vom Gateway zum TVHeadend-Server.

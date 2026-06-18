@@ -32,13 +32,14 @@ request_timeout_seconds: 30
 
 Wenn `api_token` leer ist, werden keine Token-Header gesendet.
 
-Diese Add-on-Optionen verbinden Home Assistant mit dem externen Gateway. Die TVHeadend-Konfiguration selbst wird danach in der Add-on-Seitenleiste gepflegt:
+Diese Add-on-Optionen verbinden Home Assistant mit dem externen Gateway. Die Gateway-Adresse wird in der Seitenleiste nur angezeigt.
+
+Die TVHeadend-Konfiguration selbst wird danach in der Add-on-Seitenleiste gepflegt:
 
 - Protokoll, Host/IP und Port des TVHeadend-Servers
 - optionaler TVHeadend-Benutzer
 - optionales TVHeadend-Passwort
 - Cache-Zeit des Gateways
-- optionale Home-Assistant-Metadaten
 
 Nach dem Speichern der Konfiguration im Add-on sollte `Neu laden` ausgefuehrt oder der externe Gateway-Dienst neu gestartet werden, damit alle Bootstrap-Werte sicher uebernommen werden.
 
