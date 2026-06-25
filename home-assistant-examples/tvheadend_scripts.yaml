@@ -90,10 +90,10 @@ tvheadend_gateway_dialog_fortsetzen:
       selector:
         text:
     satellite:
-      required: true
+      required: false
+      default: ''
       selector:
-        entity:
-          domain: assist_satellite
+        text:
   sequence:
   - variables:
       dialog_status: '{{ status | trim }}'
@@ -101,10 +101,8 @@ tvheadend_gateway_dialog_fortsetzen:
   - repeat:
       while:
       - condition: template
-        value_template: >-
-          {{ dialog_status == 'clarify'
-             and satellite | trim != ''
-             and repeat.index <= 30 }}
+        value_template: "{{ dialog_status == 'clarify'\n   and satellite | trim !=
+          ''\n   and repeat.index <= 30 }}"
       sequence:
       - action: assist_satellite.ask_question
         data:
@@ -117,54 +115,39 @@ tvheadend_gateway_dialog_fortsetzen:
           preannounce: false
         response_variable: dialog_followup
       - variables:
-          dialog_followup_text: >-
-            {% if dialog_followup.slots is defined
-                  and dialog_followup.slots.tvheadend_followup_text is defined %}
-              {{ dialog_followup.slots.tvheadend_followup_text }}
-            {% else %}
-              {{ dialog_followup.sentence | default('') }}
-            {% endif %}
-          dialog_followup_is_echo: >-
-            {% set t = dialog_followup_text | lower | trim %}
-            {{ t.startswith('fuer das')
-               or t.startswith('im ersten laeuft')
-               or t.startswith('im zdf laeuft')
-               or 'soll ich mit dem naechsten sendeplatz fortfahren' in t }}
+          dialog_followup_text: "{% if dialog_followup.slots is defined\n      and
+            dialog_followup.slots.tvheadend_followup_text is defined %}\n  {{ dialog_followup.slots.tvheadend_followup_text
+            }}\n{% else %}\n  {{ dialog_followup.sentence | default('') }}\n{% endif
+            %}"
+          dialog_followup_is_echo: "{% set t = dialog_followup_text | lower | trim
+            %} {{ t.startswith('fuer das')\n   or t.startswith('im ersten laeuft')\n
+            \  or t.startswith('im zdf laeuft')\n   or 'soll ich mit dem naechsten
+            sendeplatz fortfahren' in t }}"
       - action: script.tvheadend_gateway_sprachbefehl
         data:
-          text: >-
-            {% if dialog_followup_is_echo | bool
-                  or dialog_followup_text | trim == '' %}
-              beenden
-            {% else %}
-              {{ dialog_followup_text | trim }}
-            {% endif %}
+          text: "{% if dialog_followup_is_echo | bool\n      or dialog_followup_text
+            | trim == '' %}\n  beenden\n{% else %}\n  {{ dialog_followup_text | trim
+            }}\n{% endif %}"
           device: '{{ device }}'
           user: '{{ user }}'
           source: '{{ source }}'
         response_variable: dialog_gateway_response
       - variables:
-          dialog_status: >-
-            {% if dialog_gateway_response.status is defined %}
-              {{ dialog_gateway_response.status | trim }}
-            {% elif dialog_gateway_response.tvheadend_gateway_result is defined %}
-              {{ dialog_gateway_response.tvheadend_gateway_result.status | default('error') | trim }}
-            {% else %}
-              error
-            {% endif %}
-          dialog_message: >-
-            {% if dialog_gateway_response.message is defined %}
-              {{ dialog_gateway_response.message | trim }}
-            {% elif dialog_gateway_response.tvheadend_gateway_result is defined %}
-              {{ dialog_gateway_response.tvheadend_gateway_result.message
-                 | default('Ich habe keine Antwort vom TVHeadend Gateway erhalten.') | trim }}
-            {% else %}
-              Ich habe keine Antwort vom TVHeadend Gateway erhalten.
-            {% endif %}
+          dialog_status: "{% if dialog_gateway_response.status is defined %}\n  {{
+            dialog_gateway_response.status | trim }}\n{% elif dialog_gateway_response.tvheadend_gateway_result
+            is defined %}\n  {{ dialog_gateway_response.tvheadend_gateway_result.status
+            | default('error') | trim }}\n{% else %}\n  error\n{% endif %}"
+          dialog_message: "{% if dialog_gateway_response.message is defined %}\n  {{
+            dialog_gateway_response.message | trim }}\n{% elif dialog_gateway_response.tvheadend_gateway_result
+            is defined %}\n  {{ dialog_gateway_response.tvheadend_gateway_result.message\n
+            \    | default('Ich habe keine Antwort vom TVHeadend Gateway erhalten.')
+            | trim }}\n{% else %}\n  Ich habe keine Antwort vom TVHeadend Gateway
+            erhalten.\n{% endif %}"
   - variables:
       tvheadend_dialog_result:
         status: '{{ dialog_status }}'
         message: '{{ dialog_message }}'
   - stop: '{{ dialog_message }}'
     response_variable: tvheadend_dialog_result
-  description: Haelt den TV-Programmdialog fuer Weiter, Wiederholen und Aufnahmeauswahl offen.
+  description: Haelt den TV-Programmdialog fuer Weiter, Wiederholen und Aufnahmeauswahl
+    offen.

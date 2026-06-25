@@ -115,7 +115,16 @@
       gateway_user: "{% if trigger.context is defined and trigger.context.user_id
         is defined %}\n  {{ trigger.context.user_id }}\n{% else %}\n{% endif %}"
       gateway_source: assist
-      tvheadend_gateway_followup_satellite: assist_satellite.home_assistant_voice_0ac6ed_assist_satellit
+      tvheadend_gateway_followup_satellite: >-
+        {% set result = namespace(entity='') %}
+        {% if trigger.device_id is defined and trigger.device_id %}
+          {% for entity_id in device_entities(trigger.device_id) %}
+            {% if entity_id.startswith('assist_satellite.') %}
+              {% set result.entity = entity_id %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ result.entity }}
   - action: script.tvheadend_gateway_sprachbefehl
     data:
       text: '{{ gateway_text | trim }}'

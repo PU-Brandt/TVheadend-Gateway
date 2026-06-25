@@ -10,3 +10,7 @@ Home-Assistant-Konfiguration ersetzen.
 
 Der Dialog gibt einen Sendeplatz pro Schritt aus und versteht unter anderem
 `weiter`, `wiederholen`, `beenden` und `nimm die zweite Sendung auf`.
+
+Die Automation ermittelt den ausloesenden Assist-Satelliten dynamisch. Anfragen
+aus der Home-Assistant-App werden ueber die normale Konversationsantwort auf dem
+Handy beantwortet und nicht an einen fest eingetragenen ESPHome-Satelliten gesendet.
