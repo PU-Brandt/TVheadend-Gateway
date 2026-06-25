@@ -9,7 +9,7 @@ Das Add-on ersetzt das externe Gateway nicht. Es dient als Konfigurations-, Diag
 - Ordner: `tv-headend-gateway`
 - Ingress-Oberflaeche: ja
 - Externer Dienst: `TV-Headend Gateway`
-- Standard-Port des externen Dienstes: `8088`
+- Standard-Port des externen Dienstes: `8089`
 
 ## Installation
 
@@ -21,3 +21,4 @@ Das Add-on ersetzt das externe Gateway nicht. Es dient als Konfigurations-, Diag
 
 Secrets und echte lokale Konfigurationen gehoeren nicht in dieses Repository.
 
+Beispiele fuer die Assist-Anbindung liegen unter `home-assistant-examples`.

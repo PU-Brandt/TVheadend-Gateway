@@ -1,0 +1,170 @@
+﻿tvheadend_gateway_sprachbefehl:
+  alias: TVHeadend Gateway Sprachbefehl
+  mode: queued
+  fields:
+    text:
+      name: Befehl
+      required: true
+      selector:
+        text:
+    device:
+      name: Sprachgeraet
+      required: false
+      default: home_assistant
+      selector:
+        text:
+    user:
+      name: Benutzer
+      required: false
+      default: ''
+      selector:
+        text:
+    source:
+      name: Quelle
+      required: false
+      default: home_assistant
+      selector:
+        text:
+  sequence:
+  - action: rest_command.tvheadend_gateway_dialog
+    data:
+      text: '{{ text }}'
+      device: '{{ device | default(''home_assistant'') }}'
+      user: '{{ user | default('''') }}'
+      source: '{{ source | default(''home_assistant'') }}'
+    response_variable: tvheadend_gateway_response
+  - variables:
+      gateway_status: "{% if tvheadend_gateway_response.content is mapping %}\n  {{
+        tvheadend_gateway_response.content.status | default('error') }}\n{% else %}\n
+        \ {{ (tvheadend_gateway_response.content | default('{}') | from_json).status
+        | default('error') }}\n{% endif %}"
+      gateway_message: "{% if tvheadend_gateway_response.content is mapping %}\n  {{
+        tvheadend_gateway_response.content.message | default('Keine Antwort vom TVHeadend
+        Gateway erhalten.') }}\n{% else %}\n  {{ (tvheadend_gateway_response.content
+        | default('{}') | from_json).message | default('Keine Antwort vom TVHeadend
+        Gateway erhalten.') }}\n{% endif %}"
+  - action: persistent_notification.create
+    data:
+      title: TVHeadend Gateway
+      message: '{{ gateway_message }}'
+      notification_id: tvheadend_gateway_last_response
+  - action: system_log.write
+    data:
+      level: info
+      message: 'TVHeadend Gateway Antwort: {{ gateway_status }} - {{ gateway_message
+        }}'
+  - variables:
+      tvheadend_gateway_result:
+        status: '{{ gateway_status | trim }}'
+        message: '{{ gateway_message | trim }}'
+        raw: '{{ tvheadend_gateway_response.content | default({}) }}'
+  - set_conversation_response: '{{ gateway_message | trim }}'
+  - stop: '{{ gateway_message | trim }}'
+    response_variable: tvheadend_gateway_result
+  description: Sendet freie TV- und Aufnahme-Sprachbefehle an den TVHeadend Gateway
+    und gibt die Antwort an Assist zurueck.
+tvheadend_gateway_dialog_fortsetzen:
+  alias: TVHeadend Gateway Dialog fortsetzen
+  mode: queued
+  fields:
+    status:
+      required: true
+      selector:
+        text:
+    message:
+      required: true
+      selector:
+        text:
+    device:
+      required: true
+      selector:
+        text:
+    user:
+      required: false
+      default: ''
+      selector:
+        text:
+    source:
+      required: false
+      default: assist
+      selector:
+        text:
+    satellite:
+      required: true
+      selector:
+        entity:
+          domain: assist_satellite
+  sequence:
+  - variables:
+      dialog_status: '{{ status | trim }}'
+      dialog_message: '{{ message | trim }}'
+  - repeat:
+      while:
+      - condition: template
+        value_template: >-
+          {{ dialog_status == 'clarify'
+             and satellite | trim != ''
+             and repeat.index <= 30 }}
+      sequence:
+      - action: assist_satellite.ask_question
+        data:
+          entity_id: '{{ satellite }}'
+          question: '{{ dialog_message }}'
+          answers:
+          - id: tvheadend_followup
+            sentences:
+            - '{tvheadend_followup_text}'
+          preannounce: false
+        response_variable: dialog_followup
+      - variables:
+          dialog_followup_text: >-
+            {% if dialog_followup.slots is defined
+                  and dialog_followup.slots.tvheadend_followup_text is defined %}
+              {{ dialog_followup.slots.tvheadend_followup_text }}
+            {% else %}
+              {{ dialog_followup.sentence | default('') }}
+            {% endif %}
+          dialog_followup_is_echo: >-
+            {% set t = dialog_followup_text | lower | trim %}
+            {{ t.startswith('fuer das')
+               or t.startswith('im ersten laeuft')
+               or t.startswith('im zdf laeuft')
+               or 'soll ich mit dem naechsten sendeplatz fortfahren' in t }}
+      - action: script.tvheadend_gateway_sprachbefehl
+        data:
+          text: >-
+            {% if dialog_followup_is_echo | bool
+                  or dialog_followup_text | trim == '' %}
+              beenden
+            {% else %}
+              {{ dialog_followup_text | trim }}
+            {% endif %}
+          device: '{{ device }}'
+          user: '{{ user }}'
+          source: '{{ source }}'
+        response_variable: dialog_gateway_response
+      - variables:
+          dialog_status: >-
+            {% if dialog_gateway_response.status is defined %}
+              {{ dialog_gateway_response.status | trim }}
+            {% elif dialog_gateway_response.tvheadend_gateway_result is defined %}
+              {{ dialog_gateway_response.tvheadend_gateway_result.status | default('error') | trim }}
+            {% else %}
+              error
+            {% endif %}
+          dialog_message: >-
+            {% if dialog_gateway_response.message is defined %}
+              {{ dialog_gateway_response.message | trim }}
+            {% elif dialog_gateway_response.tvheadend_gateway_result is defined %}
+              {{ dialog_gateway_response.tvheadend_gateway_result.message
+                 | default('Ich habe keine Antwort vom TVHeadend Gateway erhalten.') | trim }}
+            {% else %}
+              Ich habe keine Antwort vom TVHeadend Gateway erhalten.
+            {% endif %}
+  - variables:
+      tvheadend_dialog_result:
+        status: '{{ dialog_status }}'
+        message: '{{ dialog_message }}'
+  - stop: '{{ dialog_message }}'
+    response_variable: tvheadend_dialog_result
+  description: Haelt den TV-Programmdialog fuer Weiter, Wiederholen und Aufnahmeauswahl offen.

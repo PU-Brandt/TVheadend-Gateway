@@ -1,0 +1,164 @@
+﻿- id: tvheadend_gateway_assist_sentence
+  alias: TVHeadend Gateway Assist Sprachbefehle
+  description: Leitet TV-Programm- und Aufnahmebefehle von Home Assistant Assist an
+    den TVHeadend Gateway weiter.
+  mode: queued
+  triggers:
+  - trigger: conversation
+    id: tv_now
+    command:
+    - was laeuft im fernsehen
+    - was laeuft heute im fernsehen
+    - was läuft heute im fernsehen
+    - was laeuft heute im fernsehprogramm
+    - was läuft heute im fernsehprogramm
+    - was laeuft heute auf allen sendern
+    - was läuft heute auf allen sendern
+    - was laeuft heute auf allen programmen
+    - was läuft heute auf allen programmen
+    - was läuft im fernsehen
+    - was laeuft jetzt im fernsehen
+    - was läuft jetzt im fernsehen
+    - was laeuft im hauptprogramm
+    - was laeuft heute im hauptprogramm
+    - was läuft heute im hauptprogramm
+    - was läuft im hauptprogramm
+    - was laeuft jetzt im hauptprogramm
+    - was laeuft heute abend im hauptprogramm
+    - was läuft heute abend im hauptprogramm
+    - was laeuft heute abend im fernsehen
+    - was läuft heute abend im fernsehen
+    - was laeuft heute abend im fernsehprogramm
+    - was läuft heute abend im fernsehprogramm
+    - was laeuft heute abend auf allen sendern
+    - was läuft heute abend auf allen sendern
+    - was laeuft heute abend auf allen programmen
+    - was läuft heute abend auf allen programmen
+    - was laeuft heute im morgenprogramm
+    - was läuft heute im morgenprogramm
+    - was laeuft im morgenprogramm
+    - was laeuft heute morgen im fernsehen
+    - was läuft im morgenprogramm
+    - was laeuft heute im mittagsprogramm
+    - was läuft heute im mittagsprogramm
+    - was laeuft im mittagsprogramm
+    - was laeuft heute im nachmittagsprogramm
+    - was laeuft im nachmittagsprogramm
+    - was laeuft heute nachmittag im fernsehen
+    - was laeuft nachmittag im fernsehen
+    - was laeuft heute im nachtprogramm
+    - was laeuft im nachtprogramm
+    - was laeuft heute nacht im fernsehen
+    - was laeuft nachts im fernsehen
+    - was läuft im mittagsprogramm
+    - was läuft jetzt im hauptprogramm
+    - was laeuft im nebenprogramm
+    - was laeuft heute im nebenprogramm
+    - was läuft heute im nebenprogramm
+    - was laeuft heute abend im nebenprogramm
+    - was läuft heute abend im nebenprogramm
+    - was läuft im nebenprogramm
+    - was laeuft jetzt im nebenprogramm
+    - was läuft jetzt im nebenprogramm
+    - was laeuft auf allen sendern
+    - was läuft auf allen sendern
+    - was laeuft auf allen programmen
+    - was läuft auf allen programmen
+    - was laeuft auf {tvheadend_text}
+    - was läuft auf {tvheadend_text}
+    - was kommt auf {tvheadend_text}
+  - trigger: conversation
+    id: tv_search
+    command:
+    - suche {tvheadend_text} im fernsehprogramm
+    - finde {tvheadend_text} im fernsehprogramm
+    - wann kommt {tvheadend_text}
+    - laeuft heute {tvheadend_text}
+    - läuft heute {tvheadend_text}
+  - trigger: conversation
+    id: tv_record
+    command:
+    - nimm {tvheadend_text} auf
+    - nimm diese sendung auf
+    - nimm die sendung auf
+    - nimm das auf
+    - nimm nummer {tvheadend_text} auf
+    - nehme {tvheadend_text} auf
+    - nehme diese sendung auf
+    - nehme das auf
+    - zeichne {tvheadend_text} auf
+    - programmiere eine aufnahme fuer {tvheadend_text}
+    - programmiere eine aufnahme für {tvheadend_text}
+    - aufnahme fuer {tvheadend_text}
+    - aufnahme für {tvheadend_text}
+  - trigger: conversation
+    id: tv_dialog
+    command:
+    - weiter
+    - bitte weiter
+    - fortsetzen
+    - naechster sendeplatz
+    - wiederholen
+    - noch einmal
+    - nochmal
+    - beenden
+    - fertig
+  actions:
+  - variables:
+      gateway_text: "{% if trigger.slots is defined and trigger.slots.tvheadend_text
+        is defined %}\n  {{ trigger.sentence | default(trigger.text | default(trigger.slots.tvheadend_text))
+        }}\n{% else %}\n  {{ trigger.sentence | default(trigger.text | default('was
+        laeuft im hauptprogramm')) }}\n{% endif %}"
+      gateway_device: "{% if trigger.device_id is defined and trigger.device_id %}\n
+        \ {{ trigger.device_id }}\n{% else %}\n  assist_tvheadend_gateway\n{% endif
+        %}"
+      gateway_user: "{% if trigger.context is defined and trigger.context.user_id
+        is defined %}\n  {{ trigger.context.user_id }}\n{% else %}\n{% endif %}"
+      gateway_source: assist
+      tvheadend_gateway_followup_satellite: assist_satellite.home_assistant_voice_0ac6ed_assist_satellit
+  - action: script.tvheadend_gateway_sprachbefehl
+    data:
+      text: '{{ gateway_text | trim }}'
+      device: '{{ gateway_device | trim }}'
+      user: '{{ gateway_user | trim }}'
+      source: '{{ gateway_source }}'
+    response_variable: tvheadend_gateway_script
+  - variables:
+      tvheadend_gateway_status: "{% if tvheadend_gateway_script is mapping and tvheadend_gateway_script.status
+        is defined %}\n  {{ tvheadend_gateway_script.status }}\n{% elif tvheadend_gateway_script
+        is mapping and tvheadend_gateway_script.tvheadend_gateway_result is defined
+        and tvheadend_gateway_script.tvheadend_gateway_result.status is defined %}\n
+        \ {{ tvheadend_gateway_script.tvheadend_gateway_result.status }}\n{% elif
+        tvheadend_gateway_script is mapping and tvheadend_gateway_script.response
+        is defined and tvheadend_gateway_script.response.status is defined %}\n  {{
+        tvheadend_gateway_script.response.status }}\n{% else %}\n  error\n{% endif
+        %}"
+      tvheadend_gateway_message: "{% if tvheadend_gateway_script is mapping and tvheadend_gateway_script.message
+        is defined %}\n  {{ tvheadend_gateway_script.message }}\n{% elif tvheadend_gateway_script
+        is mapping and tvheadend_gateway_script.tvheadend_gateway_result is defined
+        and tvheadend_gateway_script.tvheadend_gateway_result.message is defined %}\n
+        \ {{ tvheadend_gateway_script.tvheadend_gateway_result.message }}\n{% elif
+        tvheadend_gateway_script is mapping and tvheadend_gateway_script.response
+        is defined and tvheadend_gateway_script.response.message is defined %}\n  {{
+        tvheadend_gateway_script.response.message }}\n{% else %}\n  Ich habe keine
+        Antwort vom TVHeadend Gateway erhalten.\n{% endif %}"
+  - action: script.tvheadend_gateway_dialog_fortsetzen
+    data:
+      status: '{{ tvheadend_gateway_status | trim }}'
+      message: '{{ tvheadend_gateway_message | trim }}'
+      device: '{{ gateway_device | trim }}'
+      user: '{{ gateway_user | trim }}'
+      source: '{{ gateway_source }}'
+      satellite: '{{ tvheadend_gateway_followup_satellite }}'
+    response_variable: tvheadend_gateway_dialog
+  - variables:
+      tvheadend_gateway_dialog_message: >-
+        {% if tvheadend_gateway_dialog.message is defined %}
+          {{ tvheadend_gateway_dialog.message }}
+        {% elif tvheadend_gateway_dialog.tvheadend_dialog_result is defined %}
+          {{ tvheadend_gateway_dialog.tvheadend_dialog_result.message }}
+        {% else %}
+          {{ tvheadend_gateway_message }}
+        {% endif %}
+  - set_conversation_response: '{{ tvheadend_gateway_dialog_message | trim }}'
+  - stop: '{{ tvheadend_gateway_dialog_message | trim }}'

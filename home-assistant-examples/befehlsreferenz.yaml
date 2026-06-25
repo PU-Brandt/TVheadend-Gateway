@@ -1,0 +1,81 @@
+zeitfenster:
+  morgenprogramm: "06:00-11:00"
+  mittagsprogramm: "11:00-15:00"
+  nachmittagsprogramm: "15:00-20:00"
+  abendprogramm: "20:00-01:00"
+  nachtprogramm: "01:00-06:00"
+
+programmabfrage:
+  jetzt:
+    - was laeuft im fernsehen
+    - was laeuft jetzt im fernsehen
+    - was laeuft im hauptprogramm
+    - was laeuft jetzt im hauptprogramm
+    - was laeuft im nebenprogramm
+    - was laeuft jetzt im nebenprogramm
+    - was laeuft auf {tvheadend_text}
+    - was kommt auf {tvheadend_text}
+  heute:
+    - was laeuft heute im fernsehen
+    - was laeuft heute im fernsehprogramm
+    - was laeuft heute im hauptprogramm
+    - was laeuft heute im nebenprogramm
+    - was laeuft heute auf allen sendern
+    - was laeuft heute auf allen programmen
+  tageszeit:
+    - was laeuft heute abend im fernsehen
+    - was laeuft heute abend im fernsehprogramm
+    - was laeuft heute abend im hauptprogramm
+    - was laeuft heute abend im nebenprogramm
+    - was laeuft heute abend auf allen sendern
+    - was laeuft heute im morgenprogramm
+    - was laeuft im morgenprogramm
+    - was laeuft heute morgen im fernsehen
+    - was laeuft heute im mittagsprogramm
+    - was laeuft im mittagsprogramm
+    - was laeuft heute im nachmittagsprogramm
+    - was laeuft im nachmittagsprogramm
+    - was laeuft heute im nachtprogramm
+    - was laeuft im nachtprogramm
+
+suche:
+  - suche {tvheadend_text} im fernsehprogramm
+  - finde {tvheadend_text} im fernsehprogramm
+  - wann kommt {tvheadend_text}
+  - laeuft heute {tvheadend_text}
+
+aufnahme:
+  - nimm {tvheadend_text} auf
+  - nehme {tvheadend_text} auf
+  - zeichne {tvheadend_text} auf
+  - programmiere eine aufnahme fuer {tvheadend_text}
+  - aufnahme fuer {tvheadend_text}
+
+aufnahme_kontext_geplant:
+  - nimm diese sendung auf
+  - nimm die sendung auf
+  - nimm das auf
+  - nimm nummer {tvheadend_text} auf
+  - nimm die sendung um {tvheadend_text} auf
+  - bitte nimm diese sendung auf
+
+folgeantworten:
+  - weiter
+  - bitte weiter
+  - fortsetzen
+  - naechster sendeplatz
+  - wiederholen
+  - noch einmal
+  - nochmal
+  - beenden
+  - fertig
+  - ja
+  - nein
+  - abbrechen
+  - nummer {tvheadend_text}
+  - die erste
+  - die zweite
+  - die dritte
+  - nimm die erste sendung auf
+  - nimm die zweite sendung auf
+  - nimm {tvheadend_text} auf
