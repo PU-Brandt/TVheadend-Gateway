@@ -66,6 +66,16 @@
     - was läuft auf allen programmen
     - was laeuft auf {tvheadend_text}
     - was läuft auf {tvheadend_text}
+    - was laeuft heute im {tvheadend_text}
+    - was läuft heute im {tvheadend_text}
+    - was laeuft heute abend im {tvheadend_text}
+    - was läuft heute abend im {tvheadend_text}
+    - was laeuft im {tvheadend_text}
+    - was läuft im {tvheadend_text}
+    - was laeuft heute abend im zdf
+    - was läuft heute abend im zdf
+    - was laeuft heute abend im zweiten deutschen fernsehen
+    - was läuft heute abend im zweiten deutschen fernsehen
     - was kommt auf {tvheadend_text}
   - trigger: conversation
     id: tv_search
